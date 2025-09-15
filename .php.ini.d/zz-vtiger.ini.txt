@@ -1,0 +1,9 @@
+max_input_vars = 20000
+max_execution_time = 600
+max_input_time = 600
+memory_limit = 1024M
+post_max_size = 50M
+upload_max_filesize = 50M
+default_socket_timeout = 600
+short_open_tag = Off
+date.timezone = America/Sao_Paulo
