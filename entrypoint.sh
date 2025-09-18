@@ -1,17 +1,31 @@
 #!/usr/bin/env bash
 set -e
 
-APP_DIR="/workspace"
-WEB_USER="cnb" # Usuário padrão do Paketo Buildpacks
+# --- INÍCIO DO DIAGNÓSTICO ---
+# Estas linhas nos dirão quem está executando o script e quais as permissões da pasta pai.
+echo "--- DIAGNÓSTICO DE PERMISSÕES ---"
+echo "Executando como usuário: $(whoami)"
+echo "Conteúdo e permissões de /workspace: $(ls -la /workspace)"
+if [ -d "/workspace/test" ]; then
+    echo "Permissões de /workspace/test: $(ls -ld /workspace/test)"
+else
+    echo "O diretório /workspace/test não existe ainda."
+fi
+echo "--- FIM DO DIAGNÓSTICO ---"
 
-# Lista de todos os diretórios que o VtigerCRM precisa para escrever dados.
-# Não inclua diretórios de código-fonte como /modules aqui.
+
+APP_DIR="/workspace"
+
+# Lista de diretórios que o VtigerCRM precisa para escrever dados.
 WRITABLE_DIRS=(
     "$APP_DIR/cache"
+    "$APP_DIR/cache/images"
+    "$APP_DIR/cache/import"
     "$APP_DIR/cron/modules"
     "$APP_DIR/logs"
     "$APP_DIR/storage"
     "$APP_DIR/user_privileges"
+    "$APP_DIR/test/vtlib"
     "$APP_DIR/test/vtlib/HTML"
     "$APP_DIR/test/templates_c"
     "$APP_DIR/test/wordtemplatedownload"
@@ -19,6 +33,7 @@ WRITABLE_DIRS=(
     "$APP_DIR/test/user"
     "$APP_DIR/test/contact"
     "$APP_DIR/test/logo"
+    "$APP_DIR/modules"
     "$APP_DIR/tmp"
 )
 
@@ -43,24 +58,18 @@ for FILE in "${CONFIG_FILES[@]}"; do
     touch "$FILE"
 done
 
-# PASSO 3: Ajustar a PROPRIEDADE de todos os diretórios e arquivos necessários.
-# O chown torna o usuário 'cnb' o dono de tudo que a aplicação precisa escrever.
-echo "Ajustando propriedade para o usuário '$WEB_USER'..."
-chown -R "$WEB_USER:$WEB_USER" \
+### ⚠️ AVISO DE SEGURANÇA ###
+# O comando 'chmod -R 777' abaixo concede permissão total a todos os usuários.
+# Isso é extremamente inseguro e deve ser usado APENAS para testes de diagnóstico.
+# Se isso resolver, o problema é confirmado como sendo de permissão, e devemos
+# voltar para uma solução segura com 'chown'.
+
+echo "Ajustando permissões para 777 (modo de teste)..."
+chmod -R 777 \
     "${WRITABLE_DIRS[@]}" \
     "${CONFIG_FILES[@]}"
-
-# PASSO 4: Ajustar as PERMISSÕES de forma granular e segura.
-echo "Ajustando permissões de escrita..."
-for DIR in "${WRITABLE_DIRS[@]}"; do
-    chmod 775 "$DIR" # Permissão para diretórios
-done
-for FILE in "${CONFIG_FILES[@]}"; do
-    chmod 664 "$FILE" # Permissão para arquivos
-done
 
 echo "--- Ambiente preparado com sucesso. Iniciando servidor web. ---"
 
 # PASSO 5: Iniciar o servidor web (Comando padrão do Paketo).
-# O 'exec' substitui o processo do script pelo do servidor, o que é uma boa prática.
 exec procmgr-binary /layers/paketo-buildpacks_php-start/php-start/procs.yml
