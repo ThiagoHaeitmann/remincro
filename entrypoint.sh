@@ -26,6 +26,7 @@ mkdir -p \
   "$APP_DIR/modules" \
   "$APP_DIR/test/logo"
 
+
 # --- PASSO 2: Ajustar a PROPRIEDADE das pastas para o usuário do servidor web ---
 # Esta é a parte mais importante. Torna o usuário 'cnb' o dono das pastas.
 chown -R $WEB_USER:$WEB_USER \
